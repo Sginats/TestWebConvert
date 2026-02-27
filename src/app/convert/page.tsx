@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { Navbar } from '@/components/layout/navbar';
 import { ConvertClient } from '@/components/convert/convert-client';
 
+export const dynamic = 'force-dynamic';
+
 export default async function ConvertPage() {
   const session = await getSession();
   if (!session) redirect('/login');

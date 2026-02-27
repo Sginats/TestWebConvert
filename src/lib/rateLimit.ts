@@ -1,23 +1,42 @@
-// Simple in-memory rate limiter for dev. Replace with Redis-backed solution in production.
-const attempts = new Map<string, { count: number; resetAt: number }>();
+import { createRedisConnection } from './queue';
+import IORedis from 'ioredis';
 
-export function checkRateLimit(key: string, maxAttempts = 5, windowMs = 60_000): boolean {
-  const now = Date.now();
-  const entry = attempts.get(key);
+let redis: IORedis | null = null;
 
-  if (!entry || entry.resetAt < now) {
-    attempts.set(key, { count: 1, resetAt: now + windowMs });
-    return true; // allowed
+function getRedis() {
+  if (!redis) {
+    redis = createRedisConnection();
   }
-
-  if (entry.count >= maxAttempts) {
-    return false; // rate limited
-  }
-
-  entry.count++;
-  return true;
+  return redis;
 }
 
-export function clearRateLimit(key: string) {
-  attempts.delete(key);
+export async function checkRateLimit(
+  key: string,
+  maxAttempts = 5,
+  windowMs = 60_000,
+): Promise<boolean> {
+  const fullKey = `ratelimit:${key}`;
+  
+  try {
+    const r = getRedis();
+    const count = await r.incr(fullKey);
+    if (count === 1) {
+      await r.pexpire(fullKey, windowMs);
+    }
+    
+    return count <= maxAttempts;
+  } catch (err) {
+    console.error('Rate limit error:', err);
+    return true; // fail open in case of redis error
+  }
+}
+
+export async function clearRateLimit(key: string) {
+  const fullKey = `ratelimit:${key}`;
+  try {
+    const r = getRedis();
+    await r.del(fullKey);
+  } catch {
+    // ignore
+  }
 }

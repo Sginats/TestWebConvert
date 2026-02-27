@@ -1,107 +1,116 @@
 # FileForge — File Converter
 
-A production-ready file converter web app built with Next.js 14 (App Router), TypeScript, Tailwind CSS, shadcn/ui, Prisma + PostgreSQL, BullMQ + Redis, and NextAuth.
+A premium, production-ready file converter web app built with Next.js 14 (App Router), TypeScript, Tailwind CSS, shadcn/ui, Prisma + PostgreSQL, BullMQ + Redis, and NextAuth.
 
 ---
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14 App Router, TypeScript, Tailwind CSS, shadcn/ui components
-- **Auth**: NextAuth with Credentials provider (argon2 password hashing)
+- **Frontend**: Next.js 14 App Router, TypeScript, Tailwind CSS (Custom Neon Theme)
+- **Auth**: NextAuth v4 (Credentials provider + JWT)
 - **Database**: PostgreSQL via Prisma ORM
-- **Queue**: BullMQ + Redis for background conversion jobs
-- **Storage**: Local filesystem (`/storage`) with abstraction layer for future S3
-- **Payments**: Stripe Checkout (with mock mode when keys are missing)
+- **Queue**: BullMQ + Redis for resilient background conversion
+- **Storage**: Hybrid Cloud Storage (Local FS for dev, Cloudflare R2/S3 for production)
+- **Payments**: Stripe Checkout + Mock Payment Mode
+- **Validation**: Zod (Environment, API, Forms)
 
 ---
 
-## Setup
+## Setup & Deployment
 
 ### Prerequisites
 
-- Node.js 18+
-- pnpm (`npm install -g pnpm`)
-- Docker + Docker Compose
+- Node.js 20+
+- npm / pnpm
+- Docker (for local DB/Redis)
 
-### 1. Clone & install
+### 1. Environment Configuration
 
-```bash
-git clone <repo>
-cd file-converter
-cp .env.example .env
-pnpm install
+Copy `.env.example` to `.env` and fill in the required values.
+
+```env
+# Database
+DATABASE_URL="postgresql://user:pass@localhost:5432/fileforge"
+
+# Auth
+NEXTAUTH_SECRET="your-super-secret-key"
+NEXTAUTH_URL="http://localhost:3000"
+
+# Redis
+REDIS_URL="redis://localhost:6379"
+
+# Storage (R2/S3 - Required for Vercel)
+R2_ACCESS_KEY_ID="..."
+R2_SECRET_ACCESS_KEY="..."
+R2_ENDPOINT="..."
+R2_BUCKET="..."
 ```
 
-### 2. Start Docker services
+### 2. Local Development
 
 ```bash
+# Install dependencies
+npm install
+
+# Start DB and Redis
 docker compose up -d
-# Starts PostgreSQL on :5432 and Redis on :6379
+
+# Initialize Database
+npx prisma migrate dev
+npx prisma db seed
+
+# Start Web Server
+npm run dev
+
+# Start Worker (Required for conversions)
+npm run worker
 ```
 
-### 3. Run database migrations + seed
+### 3. Vercel Deployment
 
-```bash
-pnpm prisma migrate dev --name init
-pnpm prisma db seed
-```
-
-Seed creates:
-- Admin: `admin@example.com` / `Admin123!` (9999 tokens)
-- User: `user@example.com` / `User123!` (20 tokens)
-
-### 4. Start the web server
-
-```bash
-pnpm dev
-# Available at http://localhost:3000
-```
-
-### 5. Start the worker (separate terminal)
-
-```bash
-pnpm worker
-# BullMQ worker that processes conversion jobs
-```
+1. Connect your repo to Vercel.
+2. Add all environment variables from `.env`.
+3. Set `NEXTAUTH_URL` to your production domain.
+4. Ensure `R2_*` variables are set for persistent storage (Vercel filesystem is ephemeral).
+5. The worker needs to be hosted separately (e.g., on Railway, Render, or a VPS) as Vercel doesn't support long-running background processes.
 
 ---
 
-## Running Tests
+## Robustness & Features
 
-```bash
-pnpm test
-```
-
-Tests cover:
-- Token debit/credit logic
-- Pricing calculation
-- Conversion endpoint logic (MIME whitelist, supported conversions)
+- **Health Checks**: Visit `/api/health` to verify system status (DB, Redis, Env).
+- **Rate Limiting**: Redis-backed rate limiter on auth endpoints.
+- **S3 Integration**: Automatically uses S3/R2 if environment variables are present.
+- **Audit Logs**: Comprehensive tracking of all critical user actions.
+- **Refund Logic**: Automatic token refund if a conversion job fails after all retries.
 
 ---
 
-## Stripe Integration
+## Token Pricing
 
-### With real Stripe (test mode)
+| Category | Multiplier | Example |
+|----------|------------|---------|
+| Images   | 1x         | PNG to WebP |
+| Documents| 2x         | PDF to Text |
 
-1. Create a Stripe account and get test API keys
-2. Update `.env`:
-   ```
-   STRIPE_SECRET_KEY=sk_test_...
-   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
-   STRIPE_WEBHOOK_SECRET=whsec_...
-   MOCK_PAYMENTS=false
-   ```
-3. Install Stripe CLI and forward webhooks:
-   ```bash
-   stripe listen --forward-to localhost:3000/api/shop/webhook
-   ```
+**Formula**: `Math.max(1, Math.round((2 + Math.ceil(fileMB / 5)) * multiplier))`
 
-### Mock Payments (default)
+---
 
-When `MOCK_PAYMENTS=true` (or `STRIPE_SECRET_KEY` is empty), the shop shows a "Mock Purchase" button that:
-- Instantly credits tokens
-- Creates a real `Purchase` record with `provider: "mock"`
-- No actual payment processing
+## Project Structure
+
+```
+src/
+├── app/             # App Router (Pages & API)
+├── components/      # UI Components (Flashy Neon Theme)
+├── lib/             # Business Logic & Abstractions
+│   ├── env.ts       # Strict Env Validation
+│   ├── storage.ts   # S3/Local Hybrid Storage
+│   ├── rateLimit.ts # Redis-backed Limiter
+│   └── ...
+├── worker/          # BullMQ Worker Engine
+└── ...
+```
 
 ---
 
@@ -110,13 +119,13 @@ When `MOCK_PAYMENTS=true` (or `STRIPE_SECRET_KEY` is empty), the shop shows a "M
 Old output files (>7 days) are deleted with:
 
 ```bash
-pnpm cleanup
+npm run cleanup
 ```
 
 You can add this to a cron job:
 ```bash
 # Run daily at 3am
-0 3 * * * cd /path/to/app && pnpm cleanup
+0 3 * * * cd /path/to/app && npm run cleanup
 ```
 
 ---
@@ -131,25 +140,14 @@ You can add this to a cron job:
 | TXT   | PDF | x2 |
 | PDF   | TXT | x2 |
 
-### Token Pricing Formula
-
-```
-sizeBonus = ceil(fileSizeMB / 5)
-baseCost  = 2 + sizeBonus
-finalCost = baseCost × multiplier (1 for images, 2 for docs)
-```
-
 ---
 
 ## Known Limitations
 
 1. **No server-side token refresh**: The JWT balance shown in the navbar is from login time. Refresh the page to see updated balance after purchases.
-2. **In-memory rate limiter**: The rate limiter resets on server restart. Use Redis for production.
-3. **No audio conversion**: Omitted as there are no reliable pure-JS audio conversion libraries.
-4. **PDF extraction quality**: `pdf-parse` handles text-based PDFs well but scanned/image PDFs won't extract text.
-5. **Local storage only**: Files are stored on disk. For production, implement the S3 path in `src/lib/storage.ts`.
-6. **Worker must run separately**: Run `pnpm worker` in a separate process. In production, use PM2 or a Kubernetes job.
-7. **No email verification**: Registration is immediate with no email confirmation step.
+2. **Audio conversion**: Currently only images and documents are supported.
+3. **PDF extraction quality**: `pdf-parse` handles text-based PDFs well but scanned/image PDFs won't extract text.
+4. **Email verification**: Registration is immediate for demo purposes.
 
 ---
 

@@ -4,6 +4,8 @@ import { Navbar } from '@/components/layout/navbar';
 import { ShopClient } from '@/components/shop/shop-client';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 export default async function ShopPage() {
   const session = await getSession();
   if (!session) redirect('/login');

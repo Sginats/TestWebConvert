@@ -5,6 +5,7 @@ import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useToast } from '@/components/ui/use-toast';
+import { RefreshCw } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -34,57 +35,74 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 blur-[100px] rounded-full -z-10" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 blur-[100px] rounded-full -z-10" />
+      
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link href="/" className="text-2xl font-bold gradient-text">FileForge</Link>
-          <p className="text-muted-foreground mt-2">Sign in to your account</p>
+        <div className="text-center mb-10">
+          <Link href="/" className="inline-flex items-center gap-2 group">
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center group-hover:rotate-12 transition-transform">
+              <RefreshCw className="w-6 h-6 text-primary-foreground" />
+            </div>
+            <span className="text-3xl font-black tracking-tighter">FileForge</span>
+          </Link>
+          <p className="text-muted-foreground mt-4 font-medium italic">Welcome back to the forge.</p>
         </div>
 
-        <div className="glass rounded-2xl p-8">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1.5">Email</label>
+        <div className="glass rounded-[2.5rem] p-10 shadow-2xl border-white/5 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50" />
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Email Address</label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-all"
-                placeholder="you@example.com"
+                className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium"
+                placeholder="name@company.com"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1.5">Password</label>
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Password</label>
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-all"
+                className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium"
                 placeholder="••••••••"
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary text-primary-foreground py-2.5 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+              className="w-full bg-primary text-primary-foreground py-5 rounded-2xl font-black text-lg hover:opacity-90 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed mt-4 shadow-xl shadow-primary/20 flex items-center justify-center gap-2"
             >
-              {loading ? 'Signing in…' : 'Sign in'}
+              {loading ? (
+                <><RefreshCw className="w-5 h-5 animate-spin" /> Authenticating…</>
+              ) : (
+                'Sign In'
+              )}
             </button>
           </form>
 
-          <p className="text-center text-muted-foreground text-sm mt-6">
-            No account?{' '}
-            <Link href="/register" className="text-primary hover:underline">
-              Create one
-            </Link>
-          </p>
+          <div className="mt-10 pt-8 border-t border-white/5 text-center">
+            <p className="text-muted-foreground font-medium">
+              New here?{' '}
+              <Link href="/register" className="text-primary font-bold hover:underline underline-offset-4">
+                Create an account
+              </Link>
+            </p>
+          </div>
         </div>
 
-        <p className="text-center text-xs text-muted-foreground mt-4">
-          Demo: admin@example.com / Admin123!
-        </p>
+        <div className="mt-8 glass rounded-2xl p-4 text-center border-white/5">
+           <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Demo Access</p>
+           <p className="text-sm font-medium">admin@example.com / Admin123!</p>
+        </div>
       </div>
     </div>
   );

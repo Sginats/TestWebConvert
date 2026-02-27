@@ -145,25 +145,36 @@ export function ConvertClient({ balance: initialBalance }: ConvertClientProps) {
   const isImage = inputMime.startsWith('image/');
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      <div>
-        <h1 className="text-3xl font-bold">Convert a file</h1>
-        <p className="text-muted-foreground mt-1">
-          Balance: <span className="text-primary font-medium">{initialBalance} tokens</span>
-        </p>
+    <div className="space-y-10 animate-fade-in">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-black tracking-tight mb-2">Convert Files</h1>
+          <p className="text-muted-foreground">
+            Fast, secure, and professional processing.
+          </p>
+        </div>
+        <div className="flex items-center gap-3 bg-white/5 border border-white/10 px-6 py-3 rounded-2xl shadow-inner group">
+          <Coins className="w-5 h-5 text-primary group-hover:rotate-12 transition-transform" />
+          <div className="text-right">
+             <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Balance</div>
+             <div className="text-xl font-black leading-none">{initialBalance} <span className="text-sm font-normal text-muted-foreground">tokens</span></div>
+          </div>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-8">
         {/* Drop zone */}
         <div
-          className={`glass rounded-2xl p-8 text-center cursor-pointer transition-all ${
-            dragOver ? 'border-primary/70 bg-primary/5' : 'hover:border-primary/30'
+          className={`relative overflow-hidden glass rounded-[2rem] p-12 text-center cursor-pointer transition-all duration-500 group ${
+            dragOver ? 'border-primary shadow-[0_0_30px_rgba(139,92,246,0.1)] bg-primary/5 scale-[0.99]' : 'hover:border-white/20'
           }`}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           onClick={() => fileRef.current?.click()}
         >
+          <div className="absolute inset-0 shimmer-bg opacity-0 group-hover:opacity-100 transition-opacity" />
+          
           <input
             ref={fileRef}
             type="file"
@@ -171,47 +182,59 @@ export function ConvertClient({ balance: initialBalance }: ConvertClientProps) {
             accept=".png,.jpg,.jpeg,.webp,.pdf,.txt"
             onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
           />
+          
           {file ? (
-            <div className="flex items-center justify-center gap-3">
-              <FileUp className="w-8 h-8 text-primary" />
-              <div className="text-left">
-                <p className="font-medium">{file.name}</p>
-                <p className="text-sm text-muted-foreground">
+            <div className="relative z-10 flex flex-col items-center gap-4">
+              <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center border border-primary/20 shadow-inner">
+                 <FileUp className="w-10 h-10 text-primary" />
+              </div>
+              <div>
+                <p className="text-xl font-bold">{file.name}</p>
+                <p className="text-muted-foreground">
                   {(file.size / 1024).toFixed(1)} KB · {conversionOptions?.label}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setFile(null); }}
-                className="ml-2 text-muted-foreground hover:text-foreground"
+                className="bg-white/5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive px-4 py-2 rounded-xl transition-all text-sm font-medium border border-white/5"
               >
-                <X className="w-4 h-4" />
+                Change File
               </button>
             </div>
           ) : (
-            <>
-              <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <p className="font-medium">Drop file here or click to browse</p>
-              <p className="text-sm text-muted-foreground mt-1">PNG, JPG, WebP, PDF, TXT · Max 50MB</p>
-            </>
+            <div className="relative z-10 py-4">
+              <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-white/10 group-hover:scale-110 group-hover:border-primary/50 transition-all duration-500">
+                <Upload className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
+              <p className="text-xl font-bold mb-2">Drop your file here</p>
+              <p className="text-muted-foreground">or click to browse from your device</p>
+              <div className="flex items-center justify-center gap-4 mt-8 opacity-40">
+                <span className="text-xs font-bold px-2 py-1 bg-white/10 rounded">PNG</span>
+                <span className="text-xs font-bold px-2 py-1 bg-white/10 rounded">JPG</span>
+                <span className="text-xs font-bold px-2 py-1 bg-white/10 rounded">WEBP</span>
+                <span className="text-xs font-bold px-2 py-1 bg-white/10 rounded">PDF</span>
+                <span className="text-xs font-bold px-2 py-1 bg-white/10 rounded">TXT</span>
+              </div>
+            </div>
           )}
         </div>
 
         {/* Output format */}
         {file && conversionOptions && (
-          <div className="glass rounded-2xl p-6 space-y-4">
+          <div className="glass rounded-[2rem] p-8 space-y-8 animate-fade-in">
             <div>
-              <label className="block text-sm font-medium mb-2">Output format</label>
-              <div className="flex gap-2">
+              <label className="block text-sm font-bold uppercase tracking-widest text-muted-foreground mb-6">Select Output Format</label>
+              <div className="flex flex-wrap gap-3">
                 {conversionOptions.options.map((opt) => (
                   <button
                     key={opt.mime}
                     type="button"
                     onClick={() => setOutputMime(opt.mime)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
+                    className={`px-8 py-4 rounded-2xl text-base font-bold transition-all border-2 ${
                       outputMime === opt.mime
-                        ? 'bg-primary/15 border-primary/50 text-primary'
-                        : 'border-border text-muted-foreground hover:border-border/70 hover:text-foreground'
+                        ? 'bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105'
+                        : 'bg-white/5 border-white/5 text-muted-foreground hover:border-white/20'
                     }`}
                   >
                     {opt.label}
@@ -222,43 +245,52 @@ export function ConvertClient({ balance: initialBalance }: ConvertClientProps) {
 
             {/* Resize options for images */}
             {isImage && (
-              <div>
-                <label className="block text-sm font-medium mb-2">Resize (optional)</label>
-                <div className="flex gap-3">
-                  <div>
-                    <label className="text-xs text-muted-foreground">Width (px)</label>
+              <div className="pt-8 border-t border-white/5">
+                <label className="block text-sm font-bold uppercase tracking-widest text-muted-foreground mb-6">Resize Options (Optional)</label>
+                <div className="flex flex-wrap gap-6">
+                  <div className="flex-1 min-w-[150px]">
+                    <label className="text-xs font-bold text-muted-foreground uppercase mb-2 block">Width (px)</label>
                     <input
                       type="number"
                       value={resizeWidth}
                       onChange={(e) => setResizeWidth(e.target.value)}
-                      className="w-28 block bg-secondary/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                      placeholder="Auto"
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-bold"
+                      placeholder="Original"
                       min={1}
                     />
                   </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground">Height (px)</label>
+                  <div className="flex-1 min-w-[150px]">
+                    <label className="text-xs font-bold text-muted-foreground uppercase mb-2 block">Height (px)</label>
                     <input
                       type="number"
                       value={resizeHeight}
                       onChange={(e) => setResizeHeight(e.target.value)}
-                      className="w-28 block bg-secondary/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                      placeholder="Auto"
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-bold"
+                      placeholder="Original"
                       min={1}
                     />
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">Aspect ratio is preserved.</p>
+                <p className="text-xs text-muted-foreground mt-4 font-medium italic">Aspect ratio is always preserved to prevent distortion.</p>
               </div>
             )}
 
             {/* Token cost */}
             {estimatedCost !== null && (
-              <div className="flex items-center gap-2 text-sm">
-                <Coins className="w-4 h-4 text-primary" />
-                <span>Estimated cost: <strong>{estimatedCost} tokens</strong></span>
+              <div className="pt-8 border-t border-white/5 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                   <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                     <Coins className="w-5 h-5 text-primary" />
+                   </div>
+                   <div>
+                     <div className="text-xs font-bold text-muted-foreground uppercase">Estimated Cost</div>
+                     <div className="text-xl font-black">{estimatedCost} Tokens</div>
+                   </div>
+                </div>
                 {initialBalance < estimatedCost && (
-                  <span className="text-red-400 text-xs">(insufficient balance)</span>
+                  <div className="bg-destructive/10 text-destructive px-4 py-2 rounded-xl text-sm font-bold border border-destructive/20 animate-pulse">
+                    Insufficient Balance
+                  </div>
                 )}
               </div>
             )}
@@ -269,43 +301,54 @@ export function ConvertClient({ balance: initialBalance }: ConvertClientProps) {
         <button
           type="submit"
           disabled={!file || !outputMime || uploading || (estimatedCost !== null && initialBalance < estimatedCost)}
-          className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full bg-primary text-primary-foreground py-6 rounded-2xl font-black text-xl hover:opacity-90 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed disabled:scale-100 flex items-center justify-center gap-3 shadow-2xl shadow-primary/20"
         >
           {uploading ? (
-            <><RefreshCw className="w-4 h-4 animate-spin" /> Uploading…</>
+            <><RefreshCw className="w-6 h-6 animate-spin" /> Processing…</>
           ) : (
-            <>Convert file <ArrowRight className="w-4 h-4" /></>
+            <>Initialize Conversion <ArrowRight className="w-6 h-6" /></>
           )}
         </button>
       </form>
 
       {/* Job status */}
       {jobId && (
-        <div className={`glass rounded-2xl p-6 flex items-center gap-4 ${
-          jobStatus === 'DONE' ? 'border-emerald-500/30' :
-          jobStatus === 'FAILED' ? 'border-red-500/30' : 'border-blue-500/30'
+        <div className={`glass rounded-[2rem] p-8 flex flex-col md:flex-row items-center gap-6 animate-fade-in ${
+          jobStatus === 'DONE' ? 'border-emerald-500/50 bg-emerald-500/5' :
+          jobStatus === 'FAILED' ? 'border-red-500/50 bg-red-500/5' : 'border-primary/50 bg-primary/5'
         }`}>
-          {jobStatus === 'DONE' ? (
-            <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0" />
-          ) : jobStatus === 'FAILED' ? (
-            <AlertCircle className="w-6 h-6 text-red-400 shrink-0" />
-          ) : (
-            <RefreshCw className="w-6 h-6 text-blue-400 shrink-0 animate-spin" />
-          )}
-          <div className="flex-1">
-            <p className="font-medium">
-              {jobStatus === 'DONE' ? 'Conversion complete!' :
-               jobStatus === 'FAILED' ? 'Conversion failed' :
-               `Processing… (${jobStatus})`}
-            </p>
-            {error && <p className="text-sm text-red-400 mt-0.5">{error}</p>}
+          <div className="flex-1 flex items-center gap-6">
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg ${
+              jobStatus === 'DONE' ? 'bg-emerald-500/20 text-emerald-400' :
+              jobStatus === 'FAILED' ? 'bg-red-500/20 text-red-400' : 'bg-primary/20 text-primary'
+            }`}>
+              {jobStatus === 'DONE' ? (
+                <CheckCircle className="w-8 h-8" />
+              ) : jobStatus === 'FAILED' ? (
+                <AlertCircle className="w-8 h-8" />
+              ) : (
+                <RefreshCw className="w-8 h-8 animate-spin" />
+              )}
+            </div>
+            <div>
+              <p className="text-2xl font-black tracking-tight">
+                {jobStatus === 'DONE' ? 'Conversion complete!' :
+                 jobStatus === 'FAILED' ? 'Process failed' :
+                 `Converting…`}
+              </p>
+              <p className="text-muted-foreground font-medium">
+                {jobStatus === 'DONE' ? 'Your file is ready for download' :
+                 jobStatus === 'FAILED' ? (error || 'An unexpected error occurred') :
+                 `Current state: ${jobStatus.toLowerCase()}`}
+              </p>
+            </div>
           </div>
           {jobStatus === 'DONE' && downloadToken && (
             <a
               href={`/api/download/${downloadToken}`}
-              className="flex items-center gap-2 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-4 py-2 rounded-lg text-sm font-medium hover:opacity-80 transition-opacity"
+              className="w-full md:w-auto flex items-center justify-center gap-3 bg-emerald-500 text-white px-10 py-5 rounded-2xl text-lg font-black hover:opacity-90 transition-all hover:scale-105 shadow-xl shadow-emerald-500/20"
             >
-              Download
+              Download File
             </a>
           )}
         </div>

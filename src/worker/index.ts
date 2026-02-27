@@ -5,11 +5,10 @@ import 'dotenv/config';
 import { Worker, Job } from 'bullmq';
 import { PrismaClient, JobStatus } from '@prisma/client';
 import { createRedisConnection, CONVERSION_QUEUE, ConversionJobData } from '../lib/queue';
-import { getInputPath, getOutputPath, saveOutputFile, mimeToExt } from '../lib/storage';
+import { readFile, saveOutputFile, mimeToExt } from '../lib/storage';
 import { convertImage } from '../lib/image';
 import { txtToPdf, pdfToTxt } from '../lib/document';
 import { creditTokens } from '../lib/tokens';
-import fs from 'fs';
 
 const prisma = new PrismaClient();
 
@@ -26,11 +25,7 @@ async function processConversionJob(job: Job<ConversionJobData>) {
   });
 
   // Read input
-  const fullInputPath = getInputPath(inputPath);
-  if (!fs.existsSync(fullInputPath)) {
-    throw new Error(`Input file not found: ${fullInputPath}`);
-  }
-  const inputBuffer = await fs.promises.readFile(fullInputPath);
+  const inputBuffer = await readFile(inputPath, 'inputs');
 
   // Perform conversion
   let outputBuffer: Buffer;
