@@ -1,0 +1,108 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum TransactionType {
+  CREDIT
+  DEBIT
+}
+
+enum JobStatus {
+  QUEUED
+  PROCESSING
+  DONE
+  FAILED
+  CANCELED
+}
+
+enum PurchaseStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+
+  wallet       TokenWallet?
+  transactions TokenTransaction[]
+  purchases    Purchase[]
+  jobs         ConversionJob[]
+  auditLogs    AuditLog[]
+}
+
+model TokenWallet {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  balance   Int      @default(20)
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TokenTransaction {
+  id        String          @id @default(cuid())
+  userId    String
+  amount    Int
+  type      TransactionType
+  reason    String
+  createdAt DateTime        @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Purchase {
+  id                String         @id @default(cuid())
+  userId            String
+  provider          String         @default("stripe")
+  providerSessionId String?
+  packId            String
+  amountCents       Int
+  status            PurchaseStatus @default(PENDING)
+  createdAt         DateTime       @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ConversionJob {
+  id          String    @id @default(cuid())
+  userId      String
+  inputPath   String
+  outputPath  String?
+  inputMime   String
+  outputMime  String
+  status      JobStatus @default(QUEUED)
+  costTokens  Int
+  error       String?
+  downloadToken String  @unique @default(cuid())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
