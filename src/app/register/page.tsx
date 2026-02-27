@@ -37,22 +37,22 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 blur-[100px] rounded-full -z-10" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 blur-[100px] rounded-full -z-10" />
+      <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-primary/20 blur-[120px] rounded-full -z-10 animate-pulse" />
+      <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-blue-500/10 blur-[120px] rounded-full -z-10" />
       
       <div className="w-full max-w-md">
-        <div className="text-center mb-10">
-          <Link href="/" className="inline-flex items-center gap-2 group">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center group-hover:rotate-12 transition-transform">
-              <RefreshCw className="w-6 h-6 text-primary-foreground" />
+        <div className="text-center mb-12 animate-fade-in">
+          <Link href="/" className="inline-flex items-center gap-3 group">
+            <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center group-hover:rotate-12 transition-all shadow-lg shadow-primary/20">
+              <RefreshCw className="w-7 h-7 text-primary-foreground" />
             </div>
-            <span className="text-3xl font-black tracking-tighter">FileForge</span>
+            <span className="text-4xl font-black tracking-tighter">FileForge</span>
           </Link>
-          <p className="text-muted-foreground mt-4 font-medium italic">Join the next generation of file processing.</p>
+          <p className="text-muted-foreground mt-6 font-bold uppercase tracking-widest text-xs opacity-60">Join the Forge</p>
         </div>
 
-        <div className="glass rounded-[2.5rem] p-10 shadow-2xl border-white/5 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50" />
+        <div className="glass rounded-[3rem] p-12 shadow-2xl border-white/10 relative overflow-hidden animate-fade-in delay-100">
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50" />
           
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">

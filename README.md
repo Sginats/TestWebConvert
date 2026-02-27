@@ -49,6 +49,7 @@ npm run worker
    - `DATABASE_URL`: Use a managed PostgreSQL (Supabase/Railway).
    - `REDIS_URL`: Use a managed Redis (Upstash/Railway).
    - `R2_*`: **Required**. Vercel filesystem is ephemeral. Files must be stored in R2 or S3.
+   - `WORKER_MODE`: Set to `inline` if you don't have a separate worker, or `external` (default) for production.
 3. **Build Settings**: Default (Next.js).
 
 ### Background Worker (Railway/Render/VPS)

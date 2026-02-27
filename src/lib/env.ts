@@ -30,7 +30,13 @@ const envSchema = z.object({
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional(),
 });
 
-export const env = envSchema.parse(process.env);
+const skipValidation = 
+  process.env.SKIP_ENV_VALIDATION === 'true' || 
+  process.env.NEXT_PHASE === 'phase-production-build';
+
+export const env = skipValidation 
+  ? (process.env as any)
+  : envSchema.parse(process.env);
 
 declare global {
   namespace NodeJS {

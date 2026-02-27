@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import argon2 from 'argon2';
 import { z } from 'zod';
 import { checkRateLimit } from '@/lib/rateLimit';
+import './env'; // Activate environment validation
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -15,6 +16,7 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt' },
   pages: {
     signIn: '/login',
+    error: '/login',
   },
   providers: [
     CredentialsProvider({
@@ -23,34 +25,39 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials, req) {
-        // Simple rate limit on login attempts by email
-        if (credentials?.email) {
-          const isAllowed = await checkRateLimit(`login:${credentials.email}`, 5, 60000);
-          if (!isAllowed) throw new Error('Too many login attempts. Please wait 1 minute.');
+      async authorize(credentials) {
+        try {
+          // Simple rate limit on login attempts by email
+          if (credentials?.email) {
+            const isAllowed = await checkRateLimit(`login:${credentials.email}`, 5, 60000);
+            if (!isAllowed) return null; // Too many login attempts
+          }
+
+          const parsed = loginSchema.safeParse(credentials);
+          if (!parsed.success) return null;
+
+          const { email, password } = parsed.data;
+
+          const user = await prisma.user.findUnique({
+            where: { email },
+            include: { wallet: true },
+          });
+          if (!user) return null;
+
+          const valid = await argon2.verify(user.passwordHash, password);
+          if (!valid) return null;
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            balance: user.wallet?.balance ?? 0,
+          };
+        } catch (error) {
+          console.error('[NextAuth] Authorize Error:', error);
+          return null;
         }
-
-        const parsed = loginSchema.safeParse(credentials);
-        if (!parsed.success) return null;
-
-        const { email, password } = parsed.data;
-
-        const user = await prisma.user.findUnique({
-          where: { email },
-          include: { wallet: true },
-        });
-        if (!user) throw new Error('User not found');
-
-        const valid = await argon2.verify(user.passwordHash, password);
-        if (!valid) throw new Error('Invalid password');
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          balance: user.wallet?.balance ?? 0,
-        };
       },
     }),
   ],

@@ -28,44 +28,45 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero */}
-      <section className="relative max-w-6xl mx-auto px-6 pt-40 pb-24 text-center overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-primary/10 blur-[120px] rounded-full -z-10" />
+      <section className="relative max-w-6xl mx-auto px-6 pt-40 pb-32 text-center overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[800px] bg-primary/20 blur-[150px] rounded-full -z-10 animate-pulse" />
+        <div className="absolute -bottom-40 left-0 w-[600px] h-[600px] bg-blue-500/10 blur-[120px] rounded-full -z-10" />
         
-        <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-8 animate-fade-in">
-          <Sparkles className="w-3.5 h-3.5" />
-          Next Generation Conversion
+        <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-xs font-black uppercase tracking-widest px-6 py-3 rounded-full mb-10 animate-fade-in shadow-[0_0_20px_rgba(139,92,246,0.1)]">
+          <Sparkles className="w-4 h-4" />
+          The future of file processing is here
         </div>
         
-        <h1 className="text-6xl md:text-8xl font-black mb-8 leading-[1.1] tracking-tighter animate-fade-in">
-          Convert files with<br />
-          <span className="gradient-text">extreme precision</span>
+        <h1 className="text-7xl md:text-9xl font-black mb-10 leading-[0.9] tracking-tighter animate-fade-in drop-shadow-2xl">
+          Forge your files<br />
+          <span className="gradient-text drop-shadow-[0_0_30px_rgba(139,92,246,0.3)]">with precision</span>
         </h1>
         
-        <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-12 leading-relaxed animate-fade-in delay-100">
-          Professional-grade image and document processing powered by our unique token engine.
-          Fast, private, and exceptionally clean.
+        <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-16 leading-relaxed animate-fade-in delay-100 font-medium">
+          Professional-grade engine for images and documents. 
+          Ultra-fast, private, and powered by a fair token economy.
         </p>
         
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in delay-200">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-6 animate-fade-in delay-200">
           <Link
             href="/register"
-            className="w-full sm:w-auto bg-primary text-primary-foreground px-8 py-4 rounded-full font-bold hover:opacity-90 transition-all hover:scale-105 flex items-center justify-center gap-2 shadow-xl shadow-primary/20"
+            className="w-full sm:w-auto bg-primary text-primary-foreground px-12 py-5 rounded-full font-black text-lg hover:opacity-90 transition-all hover:scale-105 flex items-center justify-center gap-3 shadow-[0_20px_40px_rgba(139,92,246,0.4)] group"
           >
-            Start for free <ArrowRight className="w-5 h-5" />
+            Claim 20 Free Tokens <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
           </Link>
           <Link
             href="/login"
-            className="w-full sm:w-auto glass px-8 py-4 rounded-full font-bold hover:bg-white/5 transition-all"
+            className="w-full sm:w-auto glass px-12 py-5 rounded-full font-black text-lg hover:bg-white/10 transition-all border-white/20"
           >
-            Live Demo
+            View Demo
           </Link>
         </div>
 
-        <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-8 opacity-50 grayscale hover:grayscale-0 transition-all duration-700">
-           <div className="flex items-center justify-center gap-2 font-bold text-xl"><ZapIcon className="w-6 h-6" /> SPEED</div>
-           <div className="flex items-center justify-center gap-2 font-bold text-xl"><Lock className="w-6 h-6" /> SECURE</div>
-           <div className="flex items-center justify-center gap-2 font-bold text-xl"><RefreshCw className="w-6 h-6" /> SMART</div>
-           <div className="flex items-center justify-center gap-2 font-bold text-xl"><Shield className="w-6 h-6" /> TRUST</div>
+        <div className="mt-32 grid grid-cols-2 md:grid-cols-4 gap-12 opacity-40 grayscale hover:grayscale-0 transition-all duration-1000">
+           <div className="flex items-center justify-center gap-3 font-black text-2xl tracking-tighter italic"><ZapIcon className="w-7 h-7 text-yellow-400" /> INSTANT</div>
+           <div className="flex items-center justify-center gap-3 font-black text-2xl tracking-tighter italic"><Lock className="w-7 h-7 text-emerald-400" /> ENCRYPTED</div>
+           <div className="flex items-center justify-center gap-3 font-black text-2xl tracking-tighter italic"><RefreshCw className="w-7 h-7 text-primary" /> ADAPTIVE</div>
+           <div className="flex items-center justify-center gap-3 font-black text-2xl tracking-tighter italic"><Shield className="w-7 h-7 text-blue-400" /> VERIFIED</div>
         </div>
       </section>
 

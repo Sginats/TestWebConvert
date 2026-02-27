@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import {
   saveInputFile,
+  saveOutputFile,
   mimeToExt,
   ALLOWED_MIME_TYPES,
   isConversionSupported,
@@ -13,7 +14,9 @@ import { enqueueConversionJob } from '@/lib/queue';
 import { createAuditLog } from '@/lib/audit';
 import { z } from 'zod';
 import { getRedis } from '@/lib/rateLimit';
-import { TransactionType } from '@prisma/client';
+import { TransactionType, JobStatus } from '@prisma/client';
+import { convertImage } from '@/lib/image';
+import { txtToPdf, pdfToTxt } from '@/lib/document';
 
 const MAX_SIZE = 50 * 1024 * 1024; // 50MB
 
@@ -23,12 +26,15 @@ const querySchema = z.object({
   resizeHeight: z.coerce.number().int().positive().optional(),
 });
 
+export const runtime = 'nodejs';
+
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const userId = (session.user as any).id;
   const requestId = req.headers.get('x-request-id');
+  const workerMode = process.env.WORKER_MODE || 'external';
 
   // Parse query params
   const searchParams = req.nextUrl.searchParams;
@@ -55,6 +61,7 @@ export async function POST(req: NextRequest) {
             costTokens: existingJob.costTokens,
             status: existingJob.status,
             duplicate: true,
+            downloadToken: existingJob.downloadToken,
           }, { status: 201 });
         }
       }
@@ -90,13 +97,43 @@ export async function POST(req: NextRequest) {
   // Calculate token cost
   const costTokens = calculateTokenCost(file.size, inputMime, outputMime);
 
-  // Save input file FIRST (it's safe as it's just a file on disk/S3)
+  // Read file buffer
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
   const ext = mimeToExt(inputMime);
+  
+  // Save input file
   const inputFilename = await saveInputFile(buffer, ext);
 
   try {
+    // Determine if we do inline conversion (for small files or if forced)
+    const shouldInline = workerMode === 'inline' || (file.size < 5 * 1024 * 1024 && workerMode !== 'external');
+
+    let inlineResultPath: string | null = null;
+    let inlineError: string | null = null;
+
+    if (shouldInline) {
+      try {
+        const outputExt = mimeToExt(outputMime);
+        if (inputMime.startsWith('image/') && outputMime.startsWith('image/')) {
+          const outputBuffer = await convertImage(buffer, outputMime, { resizeWidth, resizeHeight });
+          inlineResultPath = await saveOutputFile(outputBuffer, outputExt);
+        } else if (inputMime === 'text/plain' && outputMime === 'application/pdf') {
+          const outputBuffer = await txtToPdf(buffer.toString('utf-8'));
+          inlineResultPath = await saveOutputFile(outputBuffer, outputExt);
+        } else if (inputMime === 'application/pdf' && outputMime === 'text/plain') {
+          const text = await pdfToTxt(buffer);
+          const outputBuffer = Buffer.from(text, 'utf-8');
+          inlineResultPath = await saveOutputFile(outputBuffer, outputExt);
+        } else {
+          throw new Error('Unsupported inline conversion');
+        }
+      } catch (err: any) {
+        console.error('Inline conversion failed:', err);
+        inlineError = err.message || 'Inline conversion error';
+      }
+    }
+
     // Atomic debit + job creation
     const job = await prisma.$transaction(async (tx) => {
       const wallet = await tx.tokenWallet.findUnique({ where: { userId } });
@@ -128,22 +165,26 @@ export async function POST(req: NextRequest) {
           inputMime,
           outputMime,
           costTokens,
-          status: 'QUEUED',
+          status: inlineResultPath ? 'DONE' : (inlineError ? 'FAILED' : 'QUEUED'),
+          outputPath: inlineResultPath,
+          error: inlineError,
         },
       });
     });
 
-    // Enqueue BullMQ job (outside transaction)
-    await enqueueConversionJob({
-      jobId: job.id,
-      userId,
-      inputPath: inputFilename,
-      inputMime,
-      outputMime,
-      costTokens,
-      resizeWidth,
-      resizeHeight,
-    });
+    // Enqueue BullMQ job IF NOT DONE/FAILED
+    if (job.status === 'QUEUED') {
+      await enqueueConversionJob({
+        jobId: job.id,
+        userId,
+        inputPath: inputFilename,
+        inputMime,
+        outputMime,
+        costTokens,
+        resizeWidth,
+        resizeHeight,
+      });
+    }
 
     // Save idempotency key
     if (requestId) {
@@ -160,9 +201,15 @@ export async function POST(req: NextRequest) {
       inputMime,
       outputMime,
       costTokens,
+      inline: !!inlineResultPath,
     });
 
-    return NextResponse.json({ jobId: job.id, costTokens }, { status: 201 });
+    return NextResponse.json({ 
+      jobId: job.id, 
+      costTokens, 
+      status: job.status,
+      downloadToken: job.downloadToken
+    }, { status: 201 });
   } catch (e: any) {
     if (e.message === 'INSUFFICIENT_TOKENS') {
       return NextResponse.json({ error: 'Insufficient tokens.' }, { status: 402 });

@@ -149,7 +149,7 @@ export function ConvertClient({ balance: initialBalance, recentJobs: initialRece
 
     pollingRef.current = setInterval(async () => {
       if (Date.now() - startTime > timeout) {
-        clearInterval(pollingRef.current!);
+        if (pollingRef.current) clearInterval(pollingRef.current);
         setError('Conversion timed out. Please check your dashboard.');
         setJobStatus('FAILED');
         toast({ title: 'Timed out', description: 'Conversion is taking too long.', variant: 'destructive' });
@@ -161,7 +161,13 @@ export function ConvertClient({ balance: initialBalance, recentJobs: initialRece
           signal: abortControllerRef.current?.signal
         });
         
-        if (!res.ok) return;
+        if (!res.ok) {
+          const text = await res.text();
+          if (text.startsWith('<!DOCTYPE html>')) {
+            throw new Error('Server returned HTML instead of JSON');
+          }
+          return;
+        }
 
         const data = await res.json();
         const status = data.job.status;
@@ -169,13 +175,13 @@ export function ConvertClient({ balance: initialBalance, recentJobs: initialRece
 
         if (status === 'DONE') {
           setDownloadToken(data.job.downloadToken);
-          clearInterval(pollingRef.current!);
+          if (pollingRef.current) clearInterval(pollingRef.current);
           toast({ title: 'Conversion complete!', description: 'Your file is ready to download.' });
           updateBalance();
           fetchRecentJobs();
         } else if (status === 'FAILED' || status === 'CANCELED') {
           setError(data.job.error || 'Job failed');
-          clearInterval(pollingRef.current!);
+          if (pollingRef.current) clearInterval(pollingRef.current);
           toast({ title: 'Conversion failed', description: data.job.error, variant: 'destructive' });
           updateBalance();
           fetchRecentJobs();
@@ -183,6 +189,11 @@ export function ConvertClient({ balance: initialBalance, recentJobs: initialRece
       } catch (err: any) {
         if (err.name === 'AbortError') return;
         console.error('Polling error', err);
+        // If it's a persistent error, maybe stop polling
+        if (err.message.includes('JSON')) {
+          if (pollingRef.current) clearInterval(pollingRef.current);
+          setError('Communication error with server.');
+        }
       }
     }, 2000);
   }
@@ -195,6 +206,9 @@ export function ConvertClient({ balance: initialBalance, recentJobs: initialRece
     setError('');
     setJobId(null);
     setJobStatus('');
+
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    abortControllerRef.current = new AbortController();
 
     const formData = new FormData();
     formData.append('file', file);
@@ -210,9 +224,16 @@ export function ConvertClient({ balance: initialBalance, recentJobs: initialRece
         body: formData,
         headers: {
           'x-request-id': requestId,
-        }
+        },
+        signal: abortControllerRef.current.signal
       });
       
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await res.text();
+        throw new Error(text.startsWith('<!DOCTYPE html>') ? 'Server Error (HTML)' : 'Invalid server response');
+      }
+
       const data = await res.json();
       setUploading(false);
 
@@ -221,15 +242,23 @@ export function ConvertClient({ balance: initialBalance, recentJobs: initialRece
         toast({ title: 'Upload failed', description: data.error, variant: 'destructive' });
       } else {
         setJobId(data.jobId);
-        setJobStatus('QUEUED');
-        toast({ title: 'Job queued!', description: `Cost: ${data.costTokens} tokens` });
-        pollJobStatus(data.jobId);
+        setJobStatus(data.status || 'QUEUED');
+        if (data.status === 'DONE') {
+          setDownloadToken(data.downloadToken);
+          toast({ title: 'Success!', description: 'File converted instantly.' });
+          updateBalance();
+          fetchRecentJobs();
+        } else {
+          toast({ title: 'Job queued!', description: `Cost: ${data.costTokens} tokens` });
+          pollJobStatus(data.jobId);
+        }
         setBalance(prev => prev - data.costTokens);
       }
     } catch (err: any) {
+      if (err.name === 'AbortError') return;
       setUploading(false);
-      setError('Connection error');
-      toast({ title: 'Error', description: 'Failed to reach server.', variant: 'destructive' });
+      setError(err.message || 'Connection error');
+      toast({ title: 'Error', description: err.message || 'Failed to reach server.', variant: 'destructive' });
     }
   }
 

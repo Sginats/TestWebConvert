@@ -2,6 +2,7 @@ import { createRedisConnection } from './queue';
 import IORedis from 'ioredis';
 
 let redis: IORedis | null = null;
+const memoryStore = new Map<string, { count: number; expires: number }>();
 
 export function getRedis() {
   if (!redis) {
@@ -26,8 +27,19 @@ export async function checkRateLimit(
     
     return count <= maxAttempts;
   } catch (err) {
-    console.error('Rate limit error:', err);
-    return true; // fail open in case of redis error
+    console.warn('Redis rate limit error, falling back to memory:', (err as Error).message);
+    
+    // In-memory fallback
+    const now = Date.now();
+    const entry = memoryStore.get(fullKey);
+    
+    if (!entry || entry.expires < now) {
+      memoryStore.set(fullKey, { count: 1, expires: now + windowMs });
+      return true;
+    }
+    
+    entry.count += 1;
+    return entry.count <= maxAttempts;
   }
 }
 
@@ -39,4 +51,5 @@ export async function clearRateLimit(key: string) {
   } catch {
     // ignore
   }
+  memoryStore.delete(fullKey);
 }
