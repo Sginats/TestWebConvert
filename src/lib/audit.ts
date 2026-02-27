@@ -7,7 +7,7 @@ export async function createAuditLog(
 ) {
   try {
     await prisma.auditLog.create({
-      data: { action, userId: userId ?? null, meta: meta ?? null },
+      data: { action, userId: userId ?? null, meta: (meta as any) ?? null },
     });
   } catch {
     // Non-critical, don't throw

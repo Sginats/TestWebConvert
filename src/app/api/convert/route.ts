@@ -31,8 +31,8 @@ export async function POST(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
   const queryParsed = querySchema.safeParse({
     outputMime: searchParams.get('outputMime'),
-    resizeWidth: searchParams.get('resizeWidth') ?? undefined,
-    resizeHeight: searchParams.get('resizeHeight') ?? undefined,
+    resizeWidth: searchParams.get('resizeWidth') || undefined,
+    resizeHeight: searchParams.get('resizeHeight') || undefined,
   });
   if (!queryParsed.success) {
     return NextResponse.json({ error: 'Invalid parameters' }, { status: 400 });

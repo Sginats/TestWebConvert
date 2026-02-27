@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateTokenCost, getConversionCategory } from '../src/lib/pricing';
+import { calculateTokenCost, getConversionCategory } from './src/lib/pricing';
 
 describe('getConversionCategory', () => {
   it('returns image for image->image', () => {

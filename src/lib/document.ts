@@ -58,5 +58,5 @@ export async function txtToPdf(text: string): Promise<Buffer> {
 
 export async function pdfToTxt(pdfBuffer: Buffer): Promise<string> {
   const data = await pdfParse(pdfBuffer);
-  return data.text;
+  return data.text || '';
 }

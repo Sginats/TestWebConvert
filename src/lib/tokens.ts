@@ -52,7 +52,7 @@ export async function creditTokens(
     const updated = await tx.tokenWallet.upsert({
       where: { userId },
       update: { balance: { increment: amount } },
-      create: { userId, balance: 20 + amount },
+      create: { userId, balance: amount },
     });
 
     await tx.tokenTransaction.create({

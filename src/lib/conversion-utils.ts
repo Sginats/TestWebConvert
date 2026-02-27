@@ -9,7 +9,7 @@ export function calculateTokenCost(
   const sizeBonus = Math.ceil(fileMB / 5);
   const baseCost = 2 + sizeBonus;
 
-  const imageTypes = ['image/png', 'image/jpeg', 'image/webp'];
+  const imageTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/bmp'];
   const isImageConversion =
     imageTypes.includes(inputMime) && imageTypes.includes(outputMime);
 

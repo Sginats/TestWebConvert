@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { calculateTokenCost } from '../src/lib/pricing';
-import { isConversionSupported, ALLOWED_MIME_TYPES } from '../src/lib/storage';
+import { calculateTokenCost } from './src/lib/pricing';
+import { isConversionSupported, ALLOWED_MIME_TYPES } from './src/lib/storage';
 
 // Unit test the key logic used in the conversion endpoint
 

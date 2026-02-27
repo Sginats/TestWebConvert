@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { Upload, FileUp, ArrowRight, Coins, X, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { calculateTokenCost, ALLOWED_CONVERSIONS } from './conversion-utils';
+import { calculateTokenCost, ALLOWED_CONVERSIONS } from '@/lib/conversion-utils';
 
 const CONVERSION_OPTIONS: Record<string, { label: string; options: { mime: string; label: string }[] }> = {
   'image/png': {

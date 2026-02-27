@@ -1,27 +1,34 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock prisma
-const mockTransaction = vi.fn();
-const mockFindUnique = vi.fn();
-const mockUpdate = vi.fn();
-const mockCreate = vi.fn();
-const mockUpsert = vi.fn();
-
-vi.mock('../src/lib/prisma', () => ({
-  prisma: {
-    $transaction: mockTransaction,
-    tokenWallet: {
-      findUnique: mockFindUnique,
-      update: mockUpdate,
-      upsert: mockUpsert,
+vi.mock('./src/lib/prisma', () => {
+  const mockTransaction = vi.fn();
+  const mockFindUnique = vi.fn();
+  const mockUpdate = vi.fn();
+  const mockCreate = vi.fn();
+  const mockUpsert = vi.fn();
+  return {
+    prisma: {
+      $transaction: mockTransaction,
+      tokenWallet: {
+        findUnique: mockFindUnique,
+        update: mockUpdate,
+        upsert: mockUpsert,
+      },
+      tokenTransaction: {
+        create: mockCreate,
+      },
     },
-    tokenTransaction: {
-      create: mockCreate,
-    },
-  },
-}));
+  };
+});
 
-import { debitTokens, creditTokens, getBalance } from '../src/lib/tokens';
+import { debitTokens, creditTokens, getBalance } from './src/lib/tokens';
+
+const mockPrisma = (await import('./src/lib/prisma')).prisma;
+const mockTransaction = mockPrisma.$transaction as any;
+const mockFindUnique = mockPrisma.tokenWallet.findUnique as any;
+const mockUpdate = mockPrisma.tokenWallet.update as any;
+const mockCreate = mockPrisma.tokenTransaction.create as any;
+const mockUpsert = mockPrisma.tokenWallet.upsert as any;
 
 describe('debitTokens', () => {
   beforeEach(() => {
