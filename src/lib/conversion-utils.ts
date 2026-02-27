@@ -24,3 +24,18 @@ export const ALLOWED_CONVERSIONS: Record<string, string[]> = {
   'application/pdf': ['text/plain'],
   'text/plain': ['application/pdf'],
 };
+
+export function getMimeLabel(mime: string): string {
+  const labels: Record<string, string> = {
+    'image/png': 'PNG',
+    'image/jpeg': 'JPG',
+    'image/webp': 'WebP',
+    'image/gif': 'GIF',
+    'image/bmp': 'BMP',
+    'application/pdf': 'PDF',
+    'text/plain': 'TXT',
+    'audio/mpeg': 'MP3',
+    'audio/wav': 'WAV',
+  };
+  return labels[mime] || mime.split('/')[1]?.toUpperCase() || mime;
+}

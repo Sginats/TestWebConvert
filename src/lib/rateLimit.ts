@@ -3,7 +3,7 @@ import IORedis from 'ioredis';
 
 let redis: IORedis | null = null;
 
-function getRedis() {
+export function getRedis() {
   if (!redis) {
     redis = createRedisConnection();
   }

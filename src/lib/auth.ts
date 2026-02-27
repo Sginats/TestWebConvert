@@ -3,6 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from '@/lib/prisma';
 import argon2 from 'argon2';
 import { z } from 'zod';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -22,7 +23,13 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
+        // Simple rate limit on login attempts by email
+        if (credentials?.email) {
+          const isAllowed = await checkRateLimit(`login:${credentials.email}`, 5, 60000);
+          if (!isAllowed) throw new Error('Too many login attempts. Please wait 1 minute.');
+        }
+
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) return null;
 
@@ -32,10 +39,10 @@ export const authOptions: NextAuthOptions = {
           where: { email },
           include: { wallet: true },
         });
-        if (!user) return null;
+        if (!user) throw new Error('User not found');
 
         const valid = await argon2.verify(user.passwordHash, password);
-        if (!valid) return null;
+        if (!valid) throw new Error('Invalid password');
 
         return {
           id: user.id,

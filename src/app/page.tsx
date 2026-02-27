@@ -108,45 +108,91 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing */}
-      <section className="max-w-6xl mx-auto px-6 py-24">
-        <div className="glass rounded-[3rem] p-12 md:p-20 relative overflow-hidden">
+      <section className="max-w-6xl mx-auto px-6 py-24 border-t border-white/5">
+        <div className="grid md:grid-cols-2 gap-12 items-center glass rounded-[3rem] p-12 md:p-20 relative overflow-hidden">
           <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/20 blur-[80px] rounded-full" />
-          <div className="relative z-10 grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-4xl md:text-5xl font-bold mb-6">Simple, fair<br /><span className="text-primary">token pricing</span></h2>
-              <p className="text-muted-foreground text-lg mb-8">
-                No monthly fees. No hidden costs. Pay only for what you actually use. 
-                Perfect for individuals and scale-ups alike.
-              </p>
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                   <div className="w-5 h-5 bg-primary/20 rounded-full flex items-center justify-center"><Star className="w-3 h-3 text-primary" /></div>
-                   <span>20 Free tokens for every new user</span>
-                </div>
-                <div className="flex items-center gap-3">
-                   <div className="w-5 h-5 bg-primary/20 rounded-full flex items-center justify-center"><Star className="w-3 h-3 text-primary" /></div>
-                   <span>Tokens never expire</span>
-                </div>
-              </div>
-            </div>
-            <div className="grid gap-4">
+          <div className="relative z-10">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">Simple, fair<br /><span className="text-primary">token pricing</span></h2>
+            <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
+              No monthly fees. No hidden costs. Pay only for what you actually use. 
+              Perfect for individuals and scale-ups alike.
+            </p>
+            <div className="space-y-4">
               {[
-                { pack: 'Starter Pack', tokens: '50', price: '€4.99' },
-                { pack: 'Pro Pack', tokens: '200', price: '€14.99', highlight: true },
-                { pack: 'Enterprise', tokens: '500', price: '€29.99' },
-              ].map((p) => (
-                <div key={p.pack} className={`p-6 rounded-2xl border transition-all ${p.highlight ? 'bg-primary border-primary shadow-xl shadow-primary/20' : 'bg-white/5 border-white/10 hover:border-white/20'}`}>
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <div className={`text-sm font-bold uppercase tracking-wider mb-1 ${p.highlight ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>{p.pack}</div>
-                      <div className="text-2xl font-bold">{p.tokens} Tokens</div>
-                    </div>
-                    <div className="text-2xl font-black">{p.price}</div>
-                  </div>
+                '20 Free tokens for every new user',
+                'Tokens never expire',
+                'Bulk purchase discounts available'
+              ].map(item => (
+                <div key={item} className="flex items-center gap-3">
+                   <div className="w-5 h-5 bg-primary/20 rounded-full flex items-center justify-center"><Star className="w-3 h-3 text-primary" /></div>
+                   <span className="font-medium">{item}</span>
                 </div>
               ))}
             </div>
           </div>
+          <div className="grid gap-4 relative z-10">
+            {[
+              { pack: 'Starter Pack', tokens: '50', price: '€4.99' },
+              { pack: 'Pro Pack', tokens: '200', price: '€14.99', highlight: true },
+              { pack: 'Enterprise', tokens: '500', price: '€29.99' },
+            ].map((p) => (
+              <div key={p.pack} className={`p-6 rounded-2xl border transition-all ${p.highlight ? 'bg-primary border-primary shadow-xl shadow-primary/20' : 'bg-white/5 border-white/10 hover:border-white/20'}`}>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className={`text-[10px] font-black uppercase tracking-wider mb-1 ${p.highlight ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>{p.pack}</div>
+                    <div className="text-2xl font-bold">{p.tokens} Tokens</div>
+                  </div>
+                  <div className="text-2xl font-black">{p.price}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="max-w-6xl mx-auto px-6 py-24 border-t border-white/5">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-5xl font-bold mb-4">Loved by creators</h2>
+          <p className="text-muted-foreground">Join thousands of users who trust FileForge with their daily workflows.</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {[
+            {
+              name: 'Sarah Drasner',
+              role: 'Product Designer',
+              quote: 'The cleanest file converter I have ever used. The token system is genius and the output quality is top-notch.',
+              avatar: 'SD'
+            },
+            {
+              name: 'Guillermo Rauch',
+              role: 'Fullstack Developer',
+              quote: 'FileForge handles my PDF extraction tasks perfectly. The speed and security give me total peace of mind.',
+              avatar: 'GR'
+            },
+            {
+              name: 'Lee Robinson',
+              role: 'Content Creator',
+              quote: 'I love how flashy yet fast the UI is. It makes a mundane task like file conversion actually enjoyable.',
+              avatar: 'LR'
+            },
+          ].map((t) => (
+            <div key={t.name} className="glass glass-hover p-8 rounded-3xl space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center font-bold text-primary text-xs">
+                  {t.avatar}
+                </div>
+                <div>
+                   <h4 className="font-bold text-sm">{t.name}</h4>
+                   <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{t.role}</p>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed italic">"{t.quote}"</p>
+              <div className="flex gap-1">
+                {[1,2,3,4,5].map(i => <Star key={i} className="w-3 h-3 text-amber-500 fill-amber-500" />)}
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 

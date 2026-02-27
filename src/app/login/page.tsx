@@ -27,7 +27,7 @@ export default function LoginPage() {
     setLoading(false);
 
     if (result?.error) {
-      toast({ title: 'Login failed', description: 'Invalid email or password.', variant: 'destructive' });
+      toast({ title: 'Login failed', description: result.error, variant: 'destructive' });
     } else {
       router.push('/dashboard');
       router.refresh();

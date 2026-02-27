@@ -12,6 +12,8 @@ import { debitTokens } from '@/lib/tokens';
 import { enqueueConversionJob } from '@/lib/queue';
 import { createAuditLog } from '@/lib/audit';
 import { z } from 'zod';
+import { getRedis } from '@/lib/rateLimit';
+import { TransactionType } from '@prisma/client';
 
 const MAX_SIZE = 50 * 1024 * 1024; // 50MB
 
@@ -26,6 +28,7 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const userId = (session.user as any).id;
+  const requestId = req.headers.get('x-request-id');
 
   // Parse query params
   const searchParams = req.nextUrl.searchParams;
@@ -38,6 +41,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid parameters' }, { status: 400 });
   }
   const { outputMime, resizeWidth, resizeHeight } = queryParsed.data;
+
+  // Idempotency check
+  if (requestId) {
+    try {
+      const redis = getRedis();
+      const existingJobId = await redis.get(`idempotency:${userId}:${requestId}`);
+      if (existingJobId) {
+        const existingJob = await prisma.conversionJob.findUnique({ where: { id: existingJobId } });
+        if (existingJob) {
+          return NextResponse.json({
+            jobId: existingJob.id,
+            costTokens: existingJob.costTokens,
+            status: existingJob.status,
+            duplicate: true,
+          }, { status: 201 });
+        }
+      }
+    } catch (e) {
+      console.warn('Idempotency check failed:', e);
+    }
+  }
 
   const formData = await req.formData().catch(() => null);
   if (!formData) return NextResponse.json({ error: 'Invalid form data' }, { status: 400 });
@@ -66,55 +90,84 @@ export async function POST(req: NextRequest) {
   // Calculate token cost
   const costTokens = calculateTokenCost(file.size, inputMime, outputMime);
 
-  // Debit tokens
-  const debitResult = await debitTokens(
-    userId,
-    costTokens,
-    `Conversion job: ${inputMime} -> ${outputMime}`,
-  );
-  if (!debitResult.success) {
-    return NextResponse.json(
-      { error: `Insufficient tokens. Need ${costTokens}, have ${debitResult.balance}.` },
-      { status: 402 },
-    );
-  }
-
-  // Save input file
+  // Save input file FIRST (it's safe as it's just a file on disk/S3)
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
   const ext = mimeToExt(inputMime);
   const inputFilename = await saveInputFile(buffer, ext);
 
-  // Create DB job
-  const job = await prisma.conversionJob.create({
-    data: {
+  try {
+    // Atomic debit + job creation
+    const job = await prisma.$transaction(async (tx) => {
+      const wallet = await tx.tokenWallet.findUnique({ where: { userId } });
+      if (!wallet || wallet.balance < costTokens) {
+        throw new Error('INSUFFICIENT_TOKENS');
+      }
+
+      // Debit
+      await tx.tokenWallet.update({
+        where: { userId },
+        data: { balance: { decrement: costTokens } },
+      });
+
+      // Record transaction
+      await tx.tokenTransaction.create({
+        data: {
+          userId,
+          amount: costTokens,
+          type: TransactionType.DEBIT,
+          reason: `Conversion: ${inputMime} -> ${outputMime}`,
+        },
+      });
+
+      // Create Job
+      return tx.conversionJob.create({
+        data: {
+          userId,
+          inputPath: inputFilename,
+          inputMime,
+          outputMime,
+          costTokens,
+          status: 'QUEUED',
+        },
+      });
+    });
+
+    // Enqueue BullMQ job (outside transaction)
+    await enqueueConversionJob({
+      jobId: job.id,
       userId,
       inputPath: inputFilename,
       inputMime,
       outputMime,
       costTokens,
-      status: 'QUEUED',
-    },
-  });
+      resizeWidth,
+      resizeHeight,
+    });
 
-  // Enqueue BullMQ job
-  await enqueueConversionJob({
-    jobId: job.id,
-    userId,
-    inputPath: inputFilename,
-    inputMime,
-    outputMime,
-    costTokens,
-    resizeWidth,
-    resizeHeight,
-  });
+    // Save idempotency key
+    if (requestId) {
+      try {
+        const redis = getRedis();
+        await redis.set(`idempotency:${userId}:${requestId}`, job.id, 'EX', 3600);
+      } catch (e) {
+        console.warn('Failed to save idempotency key:', e);
+      }
+    }
 
-  await createAuditLog('job.created', userId, {
-    jobId: job.id,
-    inputMime,
-    outputMime,
-    costTokens,
-  });
+    await createAuditLog('job.created', userId, {
+      jobId: job.id,
+      inputMime,
+      outputMime,
+      costTokens,
+    });
 
-  return NextResponse.json({ jobId: job.id, costTokens }, { status: 201 });
+    return NextResponse.json({ jobId: job.id, costTokens }, { status: 201 });
+  } catch (e: any) {
+    if (e.message === 'INSUFFICIENT_TOKENS') {
+      return NextResponse.json({ error: 'Insufficient tokens.' }, { status: 402 });
+    }
+    console.error('Conversion creation failed:', e);
+    return NextResponse.json({ error: 'Failed to initialize conversion' }, { status: 500 });
+  }
 }
